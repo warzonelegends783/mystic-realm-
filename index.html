@@ -59,14 +59,31 @@
   #worldSelect button:disabled { opacity:.45; cursor:not-allowed; }
   #pauseMenu { position:fixed; inset:0; z-index:10; display:grid; place-items:center; padding:18px; background:#07111ddd; }
   #pauseMenu[hidden] { display:none; }
-  #pausePanel { width:min(92vw,620px); max-height:88vh; overflow:auto; padding:20px; background:#1b293d; border:2px solid #a8fff2; border-radius:14px; box-shadow:0 16px 55px #000b; }
+  #pausePanel { width:min(94vw,680px); max-height:94dvh; overflow-y:auto; overscroll-behavior:contain; padding:20px; background:#1b293d; border:2px solid #a8fff2; border-radius:14px; box-shadow:0 16px 55px #000b; }
   #pausePanel h2 { margin:0 0 8px; }
   #skinShop { margin:12px auto; padding:12px; background:#263449; border:1px solid #60728b; border-radius:10px; }
   #skinShop h3 { margin:0 0 5px; font-size:1.1rem; }
   #skinShop p { margin:4px 0 9px; font-size:.9rem; }
-  #skinOptions { display:flex; justify-content:center; flex-wrap:wrap; gap:7px; }
-  #skinOptions button { min-width:116px; font-size:.84rem; }
+  #skinOptions { display:grid !important; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:8px; max-height: min(52dvh, 420px); overflow-y:scroll; overflow-x:hidden; padding:8px; border:1px solid #60728b; border-radius:8px; background:#172438; overscroll-behavior:contain; touch-action:pan-y; }
+  #skinOptions button { width:100%; min-height:46px; font-size:.84rem; white-space:normal; line-height:1.25; }
   #skinOptions button.equipped { border-color:#f5d66e; background:#40543e; }
+  #adminPanel { margin:12px auto; padding:12px; background:#172438; border:1px solid #d6a84b; border-radius:10px; }
+  #adminPanel h3 { margin:0 0 7px; }
+  #adminPanel p { margin:5px 0 9px; font-size:.9rem; }
+  #adminTools { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:10px; }
+  #adminTools[hidden] { display:none; }
+  #adminCode { width:min(100%,220px); padding:10px; text-align:center; font:inherit; letter-spacing:5px; border:1px solid #8da2bd; border-radius:7px; background:#0e1929; color:white; }
+  #adminStatus { min-height:1.3em; color:#f5d66e; }
+
+  /* Always-visible touch controls: shown on phones, tablets, and desktop previews. */
+  .mobileControls { position:fixed !important; inset:0 !important; z-index:8 !important; display:block !important; width:auto !important; height:auto !important; margin:0 !important; padding:0 !important; pointer-events:none !important; }
+  .mobileControls button { position:fixed !important; display:flex !important; align-items:center !important; justify-content:center !important; width:clamp(64px,9vw,82px) !important; height:clamp(64px,9vw,82px) !important; min-height:64px !important; padding:0 !important; font-size:clamp(1.5rem,3vw,2rem) !important; font-weight:800 !important; color:#fff !important; background:#263f60 !important; border:3px solid #e2efff !important; border-radius:50% !important; box-shadow:0 4px 0 #0b1422, 0 0 14px #0009 !important; opacity:.94 !important; pointer-events:auto !important; touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; -webkit-tap-highlight-color:transparent !important; }
+  .mobileControls #touchLeft { left:max(12px,env(safe-area-inset-left)) !important; bottom:calc(22px + env(safe-area-inset-bottom)) !important; }
+  .mobileControls #touchRight { right:max(12px,env(safe-area-inset-right)) !important; bottom:calc(22px + env(safe-area-inset-bottom)) !important; }
+  .mobileControls .jump { left:50% !important; bottom:calc(18px + env(safe-area-inset-bottom)) !important; transform:translateX(-50%) !important; width:clamp(94px,14vw,116px) !important; height:60px !important; min-height:60px !important; border-radius:16px !important; background:#276341 !important; border-color:#b9f3c8 !important; font-size:clamp(.9rem,2vw,1.1rem) !important; }
+  .mobileControls button:active { filter:brightness(1.3) !important; }
+  .mobileControls .jump:active { transform:translateX(-50%) translateY(3px) !important; }
+
 </style>
 </head>
 <body>
@@ -96,10 +113,26 @@
     <h2>⏸️ Game Paused</h2>
     <p>Your adventure is paused. Take a break or spend your gems on a new look!</p>
     <section id="skinShop" aria-label="Skin shop">
-      <h3>💎 Hero Skin Shop</h3>
-      <p>Collect gems in the worlds to buy and equip new hero looks. Your gems and purchases save in this browser.</p>
+      <h3>💎 Hero Skin Shop — 1,000 Characters</h3>
+      <p>All 1,000 character skins are listed below. Scroll inside the dark character list to see them all. Collect gems to unlock skins; your purchases save in this browser.</p>
+      <p id="skinCount">1,000 unique color-style skins available</p>
       <p id="gemBalance">Gems: 0</p>
+      <input id="skinSearch" type="search" placeholder="Search 1,000 skins..." aria-label="Search skins" style="width:min(100%,420px);padding:10px;margin:5px auto;border-radius:7px;border:1px solid #60728b;background:#0e1929;color:white">
       <div id="skinOptions"></div>
+    </section>
+    <section id="adminPanel" aria-label="Admin panel">
+      <h3>🔐 Admin Panel</h3>
+      <p>Enter the five-digit admin code to open the game tools.</p>
+      <div id="adminLogin">
+        <input id="adminCode" type="password" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" placeholder="5-digit code" aria-label="Five-digit admin code" autocomplete="off">
+        <button id="adminUnlock" type="button">Unlock Admin</button>
+      </div>
+      <p id="adminStatus" aria-live="polite"></p>
+      <div id="adminTools" hidden>
+        <button id="adminAddGems" type="button">💎 Add 1,000 Gems</button>
+        <button id="adminUnlockSkins" type="button">⭐ Unlock All 1,000 Skins</button>
+        <button id="adminLock" type="button">Lock Admin Panel</button>
+      </div>
     </section>
     <button id="resumeButton">▶ Resume Game</button>
   </div>
@@ -168,8 +201,130 @@
     {id:"ember",name:"Fire Guardian",cost:10,hat:"#b84b32",tunic:"#a83228",trim:"#f28a45"},
     {id:"royal",name:"Royal Mage",cost:15,hat:"#7546a8",tunic:"#58318d",trim:"#c18bea"},
     {id:"gold",name:"Golden Champion",cost:25,hat:"#c18a19",tunic:"#9b741e",trim:"#f5d66e"},
-    {id:"princessHero",name:"Princess Rescuer",cost:0,hat:"#f3d36b",tunic:"#e5b8d5",trim:"#fff0a8",exclusive:true}
+    {id:"shadow",name:"Shadow Rogue",cost:30,hat:"#343044",tunic:"#24202f",trim:"#8c78bd"},
+    {id:"leaf",name:"Leaf Ranger",cost:35,hat:"#8aaf38",tunic:"#4d762b",trim:"#c5e477"},
+    {id:"frost",name:"Frost Wizard",cost:40,hat:"#a9e5f2",tunic:"#4b9ebd",trim:"#e4ffff"},
+    {id:"lava",name:"Lava Knight",cost:45,hat:"#622b25",tunic:"#a83220",trim:"#ffb13b"},
+    {id:"royalblue",name:"Royal Prince",cost:50,hat:"#253f91",tunic:"#315cc2",trim:"#f5d66e"},
+    {id:"pink",name:"Cherry Blossom",cost:55,hat:"#e98db9",tunic:"#bd5f94",trim:"#ffd6e9"},
+    {id:"thunder",name:"Thunder Hero",cost:60,hat:"#e3c62e",tunic:"#7864c7",trim:"#fff38a"},
+    {id:"pirate",name:"Sea Pirate",cost:65,hat:"#583526",tunic:"#a64b36",trim:"#e8d2a0"},
+    {id:"ninja",name:"Midnight Ninja",cost:70,hat:"#171a25",tunic:"#343b50",trim:"#e34c62"},
+    {id:"bee",name:"Honey Bee",cost:75,hat:"#e5b72a",tunic:"#28251b",trim:"#ffe36c"},
+    {id:"mushroom",name:"Mushroom Scout",cost:80,hat:"#d84b4b",tunic:"#e6e0d2",trim:"#f4a1a1"},
+    {id:"crystal",name:"Crystal Guardian",cost:85,hat:"#55d5c7",tunic:"#287f91",trim:"#b2fff5"},
+    {id:"desert",name:"Desert Nomad",cost:90,hat:"#c58a48",tunic:"#a96e36",trim:"#f3d19a"},
+    {id:"vampire",name:"Moon Vampire",cost:95,hat:"#44254f",tunic:"#30233c",trim:"#c77cdb"},
+    {id:"angel",name:"Sky Angel",cost:100,hat:"#fff0b8",tunic:"#e8e8f4",trim:"#9bdcf2"},
+    {id:"dragon",name:"Dragon Tamer",cost:110,hat:"#4c8c46",tunic:"#32613a",trim:"#e1a64d"},
+    {id:"candy",name:"Candy Knight",cost:120,hat:"#f28cb8",tunic:"#70b9d8",trim:"#fff0a8"},
+    {id:"robot",name:"Clockwork Robot",cost:130,hat:"#9ba9b5",tunic:"#566b7a",trim:"#f5c94e"},
+    {id:"ghost",name:"Friendly Ghost",cost:140,hat:"#d9e8ed",tunic:"#a9cbd5",trim:"#ffffff"},
+    {id:"phoenix",name:"Phoenix Knight",cost:150,hat:"#f18b27",tunic:"#c8422e",trim:"#ffe06b"},
+    {id:"princessHero",name:"Princess Rescuer",cost:0,hat:"#f3d36b",tunic:"#e5b8d5",trim:"#fff0a8",exclusive:true},
+    {id:"skin27",name:"Emerald Sentinel",cost:160,hat:"#b54830",tunic:"#915421",trim:"#a4dcdf"},
+    {id:"skin28",name:"Ruby Ranger",cost:170,hat:"#a3a31f",tunic:"#5f7c13",trim:"#a4abdf"},
+    {id:"skin29",name:"Sapphire Sorcerer",cost:180,hat:"#62e845",tunic:"#16e32a",trim:"#cea4df"},
+    {id:"skin30",name:"Amethyst Archer",cost:190,hat:"#3ecc99",tunic:"#28afa3",trim:"#dfa4c0"},
+    {id:"skin31",name:"Obsidian Knight",cost:200,hat:"#2578c1",tunic:"#183a9a",trim:"#dfb9a4"},
+    {id:"skin32",name:"Pearl Princess",cost:210,hat:"#4115ac",tunic:"#4e0d82",trim:"#d5dfa4"},
+    {id:"skin33",name:"Copper Captain",cost:220,hat:"#d35ac6",tunic:"#cc2e90",trim:"#a5dfa4"},
+    {id:"skin34",name:"Silver Samurai",cost:230,hat:"#d8313c",tunic:"#b93d1d",trim:"#a4dfd4"},
+    {id:"skin35",name:"Bronze Battler",cost:240,hat:"#cca119",tunic:"#9fa210",trim:"#a4badf"},
+    {id:"skin36",name:"Jade Guardian",cost:250,hat:"#589929",tunic:"#28741a",trim:"#bfa4df"},
+    {id:"skin37",name:"Rose Warrior",cost:260,hat:"#4fde88",tunic:"#22d89c",trim:"#dfa4cf"},
+    {id:"skin38",name:"Cobalt Champion",cost:270,hat:"#25bae4",tunic:"#136dc3",trim:"#dfaaa4"},
+    {id:"skin39",name:"Ivory Mage",cost:280,hat:"#3630b5",tunic:"#442191",trim:"#dfdba4"},
+    {id:"skin40",name:"Onyx Assassin",cost:290,hat:"#911fa3",tunic:"#7c136d",trim:"#b3dfa4"},
+    {id:"skin41",name:"Topaz Traveler",cost:300,hat:"#e84578",tunic:"#e3161f",trim:"#a4dfc6"},
+    {id:"skin42",name:"Opal Oracle",cost:310,hat:"#cc863e",tunic:"#af9128",trim:"#a4c8df"},
+    {id:"skin43",name:"Scarlet Scout",cost:320,hat:"#8dc125",tunic:"#4c9a18",trim:"#b1a4df"},
+    {id:"skin44",name:"Teal Templar",cost:330,hat:"#15ac2d",tunic:"#0d823f",trim:"#dfa4dd"},
+    {id:"skin45",name:"Violet Valkyrie",cost:340,hat:"#5ad3d0",tunic:"#2ea5cc",trim:"#dfa4ad"},
+    {id:"skin46",name:"Amber Adventurer",cost:350,hat:"#3153d8",tunic:"#281db9",trim:"#dfcca4"},
+    {id:"skin47",name:"Arctic Fox Hero",cost:360,hat:"#8819cc",tunic:"#9210a2",trim:"#c2dfa4"},
+    {id:"skin48",name:"Blazing Comet",cost:370,hat:"#992967",tunic:"#741a34",trim:"#a4dfb7"},
+    {id:"skin49",name:"Storm Chaser",cost:380,hat:"#de754f",tunic:"#d88322",trim:"#a4d7df"},
+    {id:"skin50",name:"Coral Crusader",cost:390,hat:"#d4e425",tunic:"#84c313",trim:"#a4a6df"},
+    {id:"skin51",name:"Glacier Guardian",cost:400,hat:"#3cb530",tunic:"#219135",trim:"#d3a4df"},
+    {id:"skin52",name:"Toxic Toadstool",cost:410,hat:"#1fa37f",tunic:"#137c7c",trim:"#dfa4bb"},
+    {id:"skin53",name:"Starfall Knight",cost:420,hat:"#458ee8",tunic:"#163be3",trim:"#dfbea4"},
+    {id:"skin54",name:"Solar Paladin",cost:430,hat:"#733ecc",tunic:"#7f28af",trim:"#d0dfa4"},
+    {id:"skin55",name:"Lunar Ranger",cost:440,hat:"#c125a2",tunic:"#9a185e",trim:"#a4dfa9"},
+    {id:"skin56",name:"Nebula Ninja",cost:450,hat:"#ac1815",tunic:"#822f0d",trim:"#a4dfd9"},
+    {id:"skin57",name:"Ancient Oak Knight",cost:460,hat:"#d3c05a",tunic:"#bacc2e",trim:"#a4b5df"},
+    {id:"skin58",name:"Wildflower Mage",cost:470,hat:"#6ad831",tunic:"#28b91d",trim:"#c4a4df"},
+    {id:"skin59",name:"River Spirit",cost:480,hat:"#19cc70",tunic:"#10a27e",trim:"#dfa4ca"},
+    {id:"skin60",name:"Volcano Rider",cost:490,hat:"#297799",tunic:"#1a4174",trim:"#dfafa4"},
+    {id:"skin61",name:"Sandstorm Scout",cost:500,hat:"#624fde",tunic:"#6a22d8",trim:"#dfdfa4"},
+    {id:"skin62",name:"Aurora Hero",cost:510,hat:"#db25e4",tunic:"#c3139c",trim:"#aedfa4"},
+    {id:"skin63",name:"Deep Sea Diver",cost:520,hat:"#b5304f",tunic:"#912621",trim:"#a4dfcb"},
+    {id:"skin64",name:"Cloud Keeper",cost:530,hat:"#a36d1f",tunic:"#7c6d13",trim:"#a4c3df"},
+    {id:"skin65",name:"Meteor Warrior",cost:540,hat:"#a4e845",tunic:"#57e316",trim:"#b6a4df"},
+    {id:"skin66",name:"Rainbow Guardian",cost:550,hat:"#3ecc5f",tunic:"#28af6c",trim:"#dfa4d8"},
+    {id:"skin67",name:"Cinder Rogue",cost:560,hat:"#25b7c1",tunic:"#186f9a",trim:"#dfa4a8"},
+    {id:"skin68",name:"Frostbite Fighter",cost:570,hat:"#1527ac",tunic:"#1f0d82",trim:"#dfd1a4"},
+    {id:"skin69",name:"Thunderclap Mage",cost:580,hat:"#af5ad3",tunic:"#c82ecc",trim:"#bddfa4"},
+    {id:"skin70",name:"Dawn Bringer",cost:590,hat:"#d83180",tunic:"#b91d3d",trim:"#a4dfbc"},
+    {id:"skin71",name:"Dusk Stalker",cost:600,hat:"#cc5819",tunic:"#a26b10",trim:"#a4d2df"},
+    {id:"skin72",name:"Tide Caller",cost:610,hat:"#869929",tunic:"#4d741a",trim:"#a7a4df"},
+    {id:"skin73",name:"Boulder Breaker",cost:620,hat:"#50de4f",tunic:"#22d852",trim:"#d8a4df"},
+    {id:"skin74",name:"Wind Dancer",cost:630,hat:"#25e4c1",tunic:"#13b4c3",trim:"#dfa4b6"},
+    {id:"skin75",name:"Starlight Scout",cost:640,hat:"#3061b5",tunic:"#212c91",trim:"#dfc3a4"},
+    {id:"skin76",name:"Nightfall Knight",cost:650,hat:"#5b1fa3",tunic:"#5f137c",trim:"#cbdfa4"},
+    {id:"skin77",name:"Pumpkin Paladin",cost:660,hat:"#e845ba",tunic:"#e31673",trim:"#a4dfae"},
+    {id:"skin78",name:"Mint Mage",cost:670,hat:"#cc4c3e",tunic:"#af5a28",trim:"#a4dfde"},
+    {id:"skin79",name:"Lemon Legend",cost:680,hat:"#c1b525",tunic:"#819a18",trim:"#a4b0df"},
+    {id:"skin80",name:"Berry Bandit",cost:690,hat:"#3cac15",tunic:"#0d820f",trim:"#c9a4df"},
+    {id:"skin81",name:"Cocoa Crusader",cost:700,hat:"#5ad39f",tunic:"#2eccb2",trim:"#dfa4c5"},
+    {id:"skin82",name:"Bubblegum Hero",cost:710,hat:"#3197d8",tunic:"#1d52b9",trim:"#dfb4a4"},
+    {id:"skin83",name:"Jellybean Knight",cost:720,hat:"#3f19cc",tunic:"#5710a2",trim:"#dadfa4"},
+    {id:"skin84",name:"Gummy Guardian",cost:730,hat:"#992995",tunic:"#741a59",trim:"#a9dfa4"},
+    {id:"skin85",name:"Toffee Templar",cost:740,hat:"#de4f64",tunic:"#d83922",trim:"#a4dfd0"},
+    {id:"skin86",name:"Marshmallow Mage",cost:750,hat:"#e4a725",tunic:"#c3ba13",trim:"#a4bedf"},
+    {id:"skin87",name:"Clocktower Captain",cost:760,hat:"#73b530",tunic:"#3b9121",trim:"#bba4df"},
+    {id:"skin88",name:"Rune Reader",cost:770,hat:"#1fa349",tunic:"#137c51",trim:"#dfa4d3"},
+    {id:"skin89",name:"Relic Hunter",cost:780,hat:"#45d1e8",tunic:"#168fe3",trim:"#dfa6a4"},
+    {id:"skin90",name:"Crystal Seeker",cost:790,hat:"#3e42cc",tunic:"#4728af",trim:"#dfd6a4"},
+    {id:"skin91",name:"Dragonfire Knight",cost:800,hat:"#a025c1",tunic:"#9a1893",trim:"#b8dfa4"},
+    {id:"skin92",name:"Phoenix Scout",cost:810,hat:"#ac1550",tunic:"#820d1b",trim:"#a4dfc1"},
+    {id:"skin93",name:"Wisp Wanderer",cost:820,hat:"#d38e5a",tunic:"#cc9d2e",trim:"#a4cddf"},
+    {id:"skin94",name:"Enchanted Bard",cost:830,hat:"#aed831",tunic:"#67b91d",trim:"#aca4df"},
+    {id:"skin95",name:"Mystic Monarch",cost:840,hat:"#19cc27",tunic:"#10a243",trim:"#dda4df"},
+    {id:"skin96",name:"Realm Walker",cost:850,hat:"#29998e",tunic:"#1a6574",trim:"#dfa4b1"},
+    {id:"skin97",name:"Prism Protector",cost:860,hat:"#4f77de",tunic:"#2224d8",trim:"#dfc8a4"},
+    {id:"skin98",name:"Galaxy Guardian",cost:870,hat:"#8d25e4",tunic:"#a213c3",trim:"#c6dfa4"},
+    {id:"skin99",name:"Comet Commander",cost:880,hat:"#b53085",tunic:"#91214a",trim:"#a4dfb3"},
+    {id:"skin100",name:"Eclipse Champion",cost:890,hat:"#a3381f",tunic:"#7c4313",trim:"#a4dbdf"}
   ];
+  // Generate skins 101–1000 with distinct names and color palettes.
+  // The first 100 hand-designed skins remain unchanged.
+  const skinAdjectives = ["Ancient","Arcane","Astral","Azure","Brave","Celestial","Crimson","Daring","Dazzling","Drifting","Enchanted","Evergreen","Fabled","Fearless","Fierce","Glimmering","Glorious","Hidden","Infinite","Iron","Jade","Legendary","Lost","Luminous","Magical","Mighty","Mystic","Radiant","Runic","Sacred"];
+  const skinNouns = ["Alchemist","Archer","Bard","Beastmaster","Blade","Captain","Champion","Druid","Explorer","Falcon","Guardian","Hero","Knight","Mage","Monarch","Nomad","Oracle","Paladin","Ranger","Rider","Rogue","Sage","Samurai","Scout","Sentinel","Shaman","Sorcerer","Traveler","Warden","Warrior"];
+  function skinHex(h, s, l) {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1-l);
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(-1, Math.min(k-3, 9-k, 1));
+      return Math.round(255 * color).toString(16).padStart(2, "0");
+    };
+    return "#" + f(0) + f(8) + f(4);
+  }
+  for (let n = 101; n <= 1000; n++) {
+    const index = n - 101;
+    const hue = (index * 137.508) % 360;
+    const adjective = skinAdjectives[Math.floor(index / skinNouns.length) % skinAdjectives.length];
+    const noun = skinNouns[index % skinNouns.length];
+    skins.push({
+      id: "skin" + n,
+      name: adjective + " " + noun + " " + n,
+      cost: 900 + (n - 100) * 10,
+      hat: skinHex(hue, 72, 48),
+      tunic: skinHex((hue + 24) % 360, 68, 34),
+      trim: skinHex((hue + 180) % 360, 78, 76)
+    });
+  }
   let gems=0, ownedSkins=["classic"], equippedSkin="classic";
   try {
     gems=Math.max(0,Number(localStorage.getItem("mysticRealmsGems"))||0);
@@ -188,8 +343,12 @@
   function refreshSkinShop() {
     document.getElementById("gemBalance").textContent="💎 Gems: "+gems;
     const holder=document.getElementById("skinOptions");
+    holder.setAttribute("aria-label", skins.length + " available character skins");
+    document.getElementById("skinCount").textContent = skins.length + " character skins available";
     holder.replaceChildren();
-    for(const skin of skins) {
+    const query = (document.getElementById("skinSearch")?.value || "").trim().toLowerCase();
+    const visibleSkins = query ? skins.filter(skin => skin.name.toLowerCase().includes(query) || skin.id.toLowerCase().includes(query)) : skins;
+    for(const skin of visibleSkins) {
       const owned=ownedSkins.includes(skin.id);
       const b=document.createElement("button");
       b.className=equippedSkin===skin.id?"equipped":"";
@@ -204,6 +363,97 @@
     }
   }
 
+  document.getElementById("skinSearch").addEventListener("input", refreshSkinShop);
+
+  // Local admin tools. The code/cooldown are browser-side convenience controls, not server-side security.
+  const ADMIN_CODE = "48291";
+  // One shared cooldown for ALL reward buttons: only one admin action per 30 minutes.
+  const ADMIN_ACTION_COOLDOWN_MS = 30 * 60 * 1000;
+  const ADMIN_COOLDOWN_KEY = "mysticRealmsAdminNextActionAt";
+  let adminMemoryNextActionAt = 0;
+  function adminCooldownRemaining() {
+    let savedNextActionAt = 0;
+    try { savedNextActionAt = Number(localStorage.getItem(ADMIN_COOLDOWN_KEY) || 0); }
+    catch (_) { /* Keep the in-memory cooldown if browser storage is unavailable. */ }
+    const nextActionAt = Math.max(adminMemoryNextActionAt, savedNextActionAt);
+    return Math.max(0, nextActionAt - Date.now());
+  }
+  function updateAdminCooldownUI() {
+    const remaining = adminCooldownRemaining();
+    const addButton = document.getElementById("adminAddGems");
+    const skinsButton = document.getElementById("adminUnlockSkins");
+    addButton.disabled = remaining > 0;
+    skinsButton.disabled = remaining > 0;
+    if (!document.getElementById("adminTools").hidden) {
+      if (remaining > 0) {
+        const totalSeconds = Math.ceil(remaining / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        document.getElementById("adminStatus").textContent = `One action already used. Both tools unlock in ${minutes}m ${String(seconds).padStart(2, "0")}s.`;
+      } else {
+        document.getElementById("adminStatus").textContent = "Admin tools ready. You may use ONE action; then both tools lock for 30 minutes.";
+      }
+    }
+  }
+  function beginAdminAction() {
+    // Re-check the shared deadline immediately before EVERY reward action.
+    // Both buttons use this same key, so using either one locks the other.
+    const now = Date.now();
+    let savedNextActionAt = 0;
+    try { savedNextActionAt = Number(localStorage.getItem(ADMIN_COOLDOWN_KEY) || 0); } catch (_) {}
+    const currentDeadline = Math.max(adminMemoryNextActionAt, savedNextActionAt);
+    if (currentDeadline > now) {
+      updateAdminCooldownUI();
+      return false;
+    }
+    adminMemoryNextActionAt = now + ADMIN_ACTION_COOLDOWN_MS;
+    try { localStorage.setItem(ADMIN_COOLDOWN_KEY, String(adminMemoryNextActionAt)); } catch (_) {}
+    updateAdminCooldownUI();
+    return true;
+  }
+  setInterval(updateAdminCooldownUI, 1000);
+  window.addEventListener("storage", (event) => {
+    if (event.key === ADMIN_COOLDOWN_KEY) updateAdminCooldownUI();
+  });
+  function lockAdminPanel() {
+    document.getElementById("adminTools").hidden = true;
+    document.getElementById("adminLogin").hidden = false;
+    document.getElementById("adminCode").value = "";
+    document.getElementById("adminStatus").textContent = "Admin panel locked.";
+  }
+  document.getElementById("adminUnlock").addEventListener("click", () => {
+    const entry = document.getElementById("adminCode").value;
+    if (!/^\d{5}$/.test(entry)) {
+      document.getElementById("adminStatus").textContent = "Enter exactly five numbers.";
+      return;
+    }
+    if (entry === ADMIN_CODE) {
+      document.getElementById("adminLogin").hidden = true;
+      document.getElementById("adminTools").hidden = false;
+      document.getElementById("adminStatus").textContent = "Admin access granted!";
+      updateAdminCooldownUI();
+    } else {
+      document.getElementById("adminStatus").textContent = "Incorrect code. Try again.";
+    }
+  });
+  document.getElementById("adminCode").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("adminUnlock").click();
+  });
+  document.getElementById("adminAddGems").addEventListener("click", () => {
+    if (!beginAdminAction()) return;
+    gems += 1000; saveShop(); refreshSkinShop();
+    document.getElementById("adminStatus").textContent = "1,000 gems added!";
+  });
+  document.getElementById("adminUnlockSkins").addEventListener("click", () => {
+    if (!beginAdminAction()) return;
+    princessRescued = true;
+    try { localStorage.setItem("mysticRealmsPrincessRescued", "yes"); } catch (_) {}
+    ownedSkins = [...new Set([...ownedSkins, ...skins.map(skin => skin.id)])];
+    saveShop(); refreshSkinShop();
+    document.getElementById("adminStatus").textContent = "All 1,000 skins unlocked!";
+  });
+  document.getElementById("adminLock").addEventListener("click", lockAdminPanel);
+
   function openPauseMenu() {
     if(gameState!=="playing" && gameState!=="paused") return;
     if(gameState==="playing") {
@@ -214,6 +464,7 @@
       document.getElementById("pauseMenu").hidden=false;
       document.getElementById("pauseButton").textContent="▶ Resume";
       refreshSkinShop();
+      lockAdminPanel();
     } else resumeGame();
   }
   function resumeGame() {
