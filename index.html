@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
 <title>Mystic Realms — Retro Fantasy Platformer</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; background:#101827; color:#f4f4f4; font-family:system-ui, sans-serif; }
+  body { margin:0; min-height:100vh; min-height:100dvh; display:grid; place-items:center; background:#101827; color:#f4f4f4; font-family:system-ui, sans-serif; overscroll-behavior:none; -webkit-touch-callout:none; }
   .wrap { width:min(96vw, 960px); text-align:center; padding:16px 0 24px; }
   h1 { margin:0 0 6px; font-size:clamp(1.4rem,4vw,2rem); letter-spacing:1px; }
   p { margin:6px 0 12px; color:#cbd5e1; }
@@ -16,6 +17,43 @@
   kbd, button { background:#263449; color:#fff; border:1px solid #60728b; border-radius:7px; padding:7px 11px; font:inherit; }
   button { cursor:pointer; } button:hover { background:#354965; }
   .note { font-size:.88rem; }
+  .keyboardHelp { margin:8px auto 4px; padding:7px 10px; max-width:720px; color:#e2e8f0; background:#1b293d; border:1px solid #60728b; border-radius:8px; font-size:.88rem; line-height:1.5; }
+  .mobileControls { display:flex; justify-content:center; align-items:center; gap:16px; margin:12px auto 4px; touch-action:none; }
+  .mobileControls button { width: min(22vw,82px); height:62px; font-size:1.55rem; font-weight:700; border-radius:14px; user-select:none; -webkit-user-select:none; touch-action:none; }
+  .mobileControls .jump { width:min(30vw,112px); background:#365b45; }
+  @media (max-width:800px), (pointer:coarse) {
+    body { display:block; min-height:100dvh; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+    .wrap { width:100%; max-width:960px; margin:0 auto; padding:8px 10px 12px; }
+    h1 { font-size:clamp(1.15rem,5vw,1.7rem); }
+    .wrap > p:not(.note) { font-size:.85rem; margin:4px 0 8px; }
+    canvas { width:100%; height:auto; max-height:52dvh; object-fit:contain; border-width:2px; border-radius:6px; }
+    .controls { gap:7px; margin-top:8px; }
+    .controls span { display:none; }
+    .controls button { min-height:42px; padding:9px 12px; font-size:.9rem; }
+    /* Floating mobile controls: movement buttons stay on the screen edges. */
+    .mobileControls { position:fixed; inset:0; z-index:8; display:block; width:auto; height:auto; margin:0; padding:0; pointer-events:none; }
+    .mobileControls button { position:fixed; width:clamp(62px,16vw,82px); height:clamp(62px,16vw,82px); min-height:62px; padding:0; font-size:clamp(1.5rem,6vw,2rem); border:2px solid #c4d5ed; border-radius:50%; box-shadow:0 4px 0 #111b2b; touch-action:none; -webkit-tap-highlight-color:transparent; pointer-events:auto; opacity:.88; }
+    .mobileControls #touchLeft { left:max(12px,env(safe-area-inset-left)); bottom:calc(22px + env(safe-area-inset-bottom)); }
+    .mobileControls #touchRight { right:max(12px,env(safe-area-inset-right)); bottom:calc(22px + env(safe-area-inset-bottom)); }
+    .mobileControls .jump { left:50%; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:clamp(88px,22vw,112px); height:58px; min-height:58px; border-radius:16px; background:#276341; border-color:#a5e8b8; font-size:clamp(.95rem,4vw,1.2rem); }
+    .mobileControls button:active { filter:brightness(1.25); box-shadow:0 1px 0 #111b2b; }
+    .mobileControls .jump:active { transform:translateX(-50%) translateY(3px); }
+    #worldSelect { gap:6px; }
+    #worldSelect button { min-height:40px; }
+    .note { font-size:.75rem; padding:0 8px; }
+    .keyboardHelp { margin:6px 8px; padding:6px 8px; font-size:.75rem; }
+    button { -webkit-appearance:none; }
+  }
+  @media (max-width:800px) and (orientation:landscape) {
+    .wrap { display:grid; grid-template-columns:minmax(0,1fr) 150px; grid-template-areas:"title title" "intro intro" "game touch" "actions actions" "world world" "note note"; gap:4px 10px; align-items:center; padding:4px 8px; }
+    h1 { grid-area:title; margin:0; }
+    .wrap > p:not(.note) { grid-area:intro; margin:0; }
+    canvas { grid-area:game; width:100%; max-height:64dvh; }
+    .mobileControls { position:fixed; inset:0; display:block; width:auto; height:auto; pointer-events:none; }
+    .controls { grid-area:actions; margin:2px 0; }
+    #worldSelect { grid-area:world; margin:2px 0; }
+    .note { grid-area:note; margin:2px 0; }
+  }
   #worldSelect { display:flex; justify-content:center; flex-wrap:wrap; gap:7px; margin-top:10px; }
   #worldSelect button { font-size:.82rem; padding:6px 9px; }
   #worldSelect button:disabled { opacity:.45; cursor:not-allowed; }
@@ -43,6 +81,12 @@
     <button id="pauseButton">Ⅱ Pause</button>
     <button id="musicButton" type="button" aria-pressed="false">♫ Music: Off</button>
     <button id="restart">Restart Game</button>
+  </div>
+  <p class="keyboardHelp"><strong>Keyboard controls:</strong> A or ← Move left · D or → Move right · Space or ↑ Jump · P or Esc Pause</p>
+  <div class="mobileControls" aria-label="Touch game controls">
+    <button type="button" id="touchLeft" aria-label="Move left">◀</button>
+    <button type="button" class="jump" id="touchJump" aria-label="Jump">JUMP ▲</button>
+    <button type="button" id="touchRight" aria-label="Move right">▶</button>
   </div>
   <div id="worldSelect" aria-label="World selection"></div>
   <p class="note">999 levels across five realms and hundreds of changing challenges! Watch out for 30 spikes, dangerous animals, and slimes in every level.</p>
@@ -353,6 +397,34 @@
   });
   window.addEventListener("keyup", e => keys.delete(e.code));
   window.addEventListener("blur", () => keys.clear());
+  // iPhone/iPad controls: support both Pointer Events and iOS Touch Events.
+  // Touch handlers are important for Safari versions/devices where pointer
+  // capture can be unreliable. Keep movement pressed until the finger lifts.
+  function bindTouchButton(id, code, isJump=false) {
+    const el=document.getElementById(id);
+    let activePointer=null;
+    const press=()=>{
+      if (gameState !== "playing") return;
+      if (isJump) { if (!keys.has(code)) jumpQueued=true; }
+      else keys.add(code);
+    };
+    const release=()=>{ keys.delete(code); activePointer=null; };
+    el.addEventListener("pointerdown", e=>{
+      e.preventDefault(); activePointer=e.pointerId; press();
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    }, {passive:false});
+    el.addEventListener("pointerup", e=>{ if(activePointer===e.pointerId) release(); });
+    el.addEventListener("pointercancel", release);
+    el.addEventListener("lostpointercapture", release);
+    el.addEventListener("touchstart", e=>{ e.preventDefault(); press(); }, {passive:false});
+    el.addEventListener("touchend", e=>{ e.preventDefault(); release(); }, {passive:false});
+    el.addEventListener("touchcancel", release, {passive:false});
+    el.addEventListener("contextmenu",e=>e.preventDefault());
+    el.addEventListener("dragstart",e=>e.preventDefault());
+  }
+  bindTouchButton("touchLeft","ArrowLeft");
+  bindTouchButton("touchRight","ArrowRight");
+  bindTouchButton("touchJump","Space",true);
   document.getElementById("restart").addEventListener("click", reset);
   document.getElementById("nextLevel").addEventListener("click", nextLevel);
   document.getElementById("pauseButton").addEventListener("click", openPauseMenu);
