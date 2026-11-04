@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>Mystic Realms — Retro Fantasy Platformer</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; min-height:100dvh; display:grid; place-items:center; background:#101827; color:#f4f4f4; font-family:system-ui, sans-serif; overscroll-behavior:none; -webkit-touch-callout:none; }
+  .wrap { width:min(96vw, 960px); text-align:center; padding:16px 0 24px; }
+  h1 { margin:0 0 6px; font-size:clamp(1.4rem,4vw,2rem); letter-spacing:1px; }
+  p { margin:6px 0 12px; color:#cbd5e1; }
+  canvas { display:block; width:100%; height:auto; aspect-ratio: 16/9; background:#79c9e8; border:4px solid #e2e8f0; border-radius:10px; image-rendering:pixelated; image-rendering:crisp-edges; box-shadow:0 12px 40px #0008; }
+  .controls { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  kbd, button { background:#263449; color:#fff; border:1px solid #60728b; border-radius:7px; padding:7px 11px; font:inherit; }
+  button { cursor:pointer; } button:hover { background:#354965; }
+  .note { font-size:.88rem; }
+  .keyboardHelp { margin:8px auto 4px; padding:7px 10px; max-width:720px; color:#e2e8f0; background:#1b293d; border:1px solid #60728b; border-radius:8px; font-size:.88rem; line-height:1.5; }
+  .mobileControls { display:flex; justify-content:center; align-items:center; gap:16px; margin:12px auto 4px; touch-action:none; }
+  .mobileControls button { width: min(22vw,82px); height:62px; font-size:1.55rem; font-weight:700; border-radius:14px; user-select:none; -webkit-user-select:none; touch-action:none; }
+  .mobileControls .jump { width:min(30vw,112px); background:#365b45; }
+  @media (max-width:800px), (pointer:coarse) {
+    body { display:block; min-height:100dvh; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+    .wrap { width:100%; max-width:960px; margin:0 auto; padding:8px 10px 12px; }
+    h1 { font-size:clamp(1.15rem,5vw,1.7rem); }
+    .wrap > p:not(.note) { font-size:.85rem; margin:4px 0 8px; }
+    canvas { width:100%; height:auto; max-height:52dvh; object-fit:contain; border-width:2px; border-radius:6px; }
+    .controls { gap:7px; margin-top:8px; }
+    .controls span { display:none; }
+    .controls button { min-height:42px; padding:9px 12px; font-size:.9rem; }
+    /* Floating mobile controls: movement buttons stay on the screen edges. */
+    .mobileControls { position:fixed; inset:0; z-index:8; display:block; width:auto; height:auto; margin:0; padding:0; pointer-events:none; }
+    .mobileControls button { position:fixed; width:clamp(62px,16vw,82px); height:clamp(62px,16vw,82px); min-height:62px; padding:0; font-size:clamp(1.5rem,6vw,2rem); border:2px solid #c4d5ed; border-radius:50%; box-shadow:0 4px 0 #111b2b; touch-action:none; -webkit-tap-highlight-color:transparent; pointer-events:auto; opacity:.88; }
+    .mobileControls #touchLeft { left:max(12px,env(safe-area-inset-left)); bottom:calc(22px + env(safe-area-inset-bottom)); }
+    .mobileControls #touchRight { right:max(12px,env(safe-area-inset-right)); bottom:calc(22px + env(safe-area-inset-bottom)); }
+    .mobileControls .jump { left:50%; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:clamp(88px,22vw,112px); height:58px; min-height:58px; border-radius:16px; background:#276341; border-color:#a5e8b8; font-size:clamp(.95rem,4vw,1.2rem); }
+    .mobileControls button:active { filter:brightness(1.25); box-shadow:0 1px 0 #111b2b; }
+    .mobileControls .jump:active { transform:translateX(-50%) translateY(3px); }
+    #worldSelect { gap:6px; }
+    #worldSelect button { min-height:40px; }
+    .note { font-size:.75rem; padding:0 8px; }
+    .keyboardHelp { margin:6px 8px; padding:6px 8px; font-size:.75rem; }
+    button { -webkit-appearance:none; }
+  }
+  @media (max-width:800px) and (orientation:landscape) {
+    .wrap { display:grid; grid-template-columns:minmax(0,1fr) 150px; grid-template-areas:"title title" "intro intro" "game touch" "actions actions" "world world" "note note"; gap:4px 10px; align-items:center; padding:4px 8px; }
+    h1 { grid-area:title; margin:0; }
+    .wrap > p:not(.note) { grid-area:intro; margin:0; }
+    canvas { grid-area:game; width:100%; max-height:64dvh; }
+    .mobileControls { position:fixed; inset:0; display:block; width:auto; height:auto; pointer-events:none; }
+    .controls { grid-area:actions; margin:2px 0; }
+    #worldSelect { grid-area:world; margin:2px 0; }
+    .note { grid-area:note; margin:2px 0; }
+  }
+  #worldSelect { display:flex; justify-content:center; flex-wrap:wrap; gap:7px; margin-top:10px; }
+  #worldSelect button { font-size:.82rem; padding:6px 9px; }
+  #worldSelect button:disabled { opacity:.45; cursor:not-allowed; }
+  #pauseMenu { position:fixed; inset:0; z-index:10; display:grid; place-items:center; padding:18px; background:#07111ddd; }
+  #pauseMenu[hidden] { display:none; }
+  #pausePanel { width:min(92vw,620px); max-height:88vh; overflow:auto; padding:20px; background:#1b293d; border:2px solid #a8fff2; border-radius:14px; box-shadow:0 16px 55px #000b; }
+  #pausePanel h2 { margin:0 0 8px; }
+  #skinShop { margin:12px auto; padding:12px; background:#263449; border:1px solid #60728b; border-radius:10px; }
+  #skinShop h3 { margin:0 0 5px; font-size:1.1rem; }
+  #skinShop p { margin:4px 0 9px; font-size:.9rem; }
+  #skinOptions { display:flex; justify-content:center; flex-wrap:wrap; gap:7px; }
+  #skinOptions button { min-width:116px; font-size:.84rem; }
+  #skinOptions button.equipped { border-color:#f5d66e; background:#40543e; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>MYSTIC REALMS</h1>
+  <p>Explore 999 challenging levels, reach the castle, and save the princess!</p>
+  <canvas id="game" width="640" height="360" aria-label="Pixel Quest platform game"></canvas>
+  <div class="controls">
+    <span><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> Move</span>
+    <span><kbd>Space</kbd> / <kbd>↑</kbd> Jump</span>
+    <button id="nextLevel" hidden>Next Level ▶</button>
+    <button id="pauseButton">Ⅱ Pause</button>
+    <button id="musicButton" type="button" aria-pressed="false">♫ Music: Off</button>
+    <button id="restart">Restart Game</button>
+  </div>
+  <p class="keyboardHelp"><strong>Keyboard controls:</strong> A or ← Move left · D or → Move right · Space or ↑ Jump · P or Esc Pause</p>
+  <div class="mobileControls" aria-label="Touch game controls">
+    <button type="button" id="touchLeft" aria-label="Move left">◀</button>
+    <button type="button" class="jump" id="touchJump" aria-label="Jump">JUMP ▲</button>
+    <button type="button" id="touchRight" aria-label="Move right">▶</button>
+  </div>
+  <div id="worldSelect" aria-label="World selection"></div>
+  <p class="note">999 levels across five realms and hundreds of changing challenges! Watch out for 30 spikes, dangerous animals, and slimes in every level.</p>
+</main>
+<div id="pauseMenu" hidden>
+  <div id="pausePanel">
+    <h2>⏸️ Game Paused</h2>
+    <p>Your adventure is paused. Take a break or spend your gems on a new look!</p>
+    <section id="skinShop" aria-label="Skin shop">
+      <h3>💎 Hero Skin Shop</h3>
+      <p>Collect gems in the worlds to buy and equip new hero looks. Your gems and purchases save in this browser.</p>
+      <p id="gemBalance">Gems: 0</p>
+      <div id="skinOptions"></div>
+    </section>
+    <button id="resumeButton">▶ Resume Game</button>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const W = canvas.width, H = canvas.height;
+
+  // Original synthesized retro adventure tune; no external audio files needed.
+  let audioContext = null, musicEnabled = false, musicTimer = null, musicStep = 0;
+  const melody = [392,494,587,494,440,523,659,523,392,494,587,784,659,587,494,440,
+                  392,494,587,494,440,523,659,784,659,587,523,494,440,494,392,0];
+  function playMusicNote() {
+    if (!musicEnabled || gameState !== "playing" || !audioContext) return;
+    const frequency = melody[musicStep % melody.length];
+    musicStep++;
+    if (frequency) {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = "square";
+      osc.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.028, audioContext.currentTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.16);
+      osc.connect(gain); gain.connect(audioContext.destination);
+      osc.start(); osc.stop(audioContext.currentTime + 0.17);
+    }
+    musicTimer = setTimeout(playMusicNote, 190);
+  }
+  async function startMusic() {
+    const AudioAPI = window.AudioContext || window.webkitAudioContext;
+    if (!AudioAPI) return;
+    if (!audioContext) audioContext = new AudioAPI();
+    try { await audioContext.resume(); } catch (_) {}
+    musicEnabled = true;
+    const button = document.getElementById("musicButton");
+    button.textContent = "♫ Music: On (click to stop)";
+    button.setAttribute("aria-pressed", "true");
+    if (gameState === "playing") playMusicNote();
+  }
+  function stopMusic() {
+    musicEnabled = false;
+    clearTimeout(musicTimer); musicTimer = null;
+    if (audioContext && audioContext.state === "running") audioContext.suspend();
+    const button = document.getElementById("musicButton");
+    button.textContent = "♫ Music: Off (click to play)";
+    button.setAttribute("aria-pressed", "false");
+  }
+  const keys = new Set();
+  let jumpQueued = false, gameState = "playing", score = 0, camera = 0;
+  let timeLeft = 120, lastTimerTick = performance.now();
+  let levelIndex = 0, levelWidth = 1800, platforms = [], coins = [], slimes = [], animals = [], obstacles = [];
+  let levelRupeesCollected = 0;
+  const gravity = 0.42;
+  let unlockedWorlds = 1;
+  try { unlockedWorlds = Math.max(1, Math.min(999, Number(localStorage.getItem("forestQuestUnlockedWorlds")) || 1)); } catch (_) {}
+  let princessRescued = false;
+  try { princessRescued = localStorage.getItem("mysticRealmsPrincessRescued") === "yes"; } catch (_) {}
+  const worldNames = ["Enchanted Forest", "Mushroom Woods", "Crystal Cavern", "Sunset Desert", "Frostpeak Mountain"];
+  const skins = [
+    {id:"classic",name:"Forest Hero",cost:0,hat:"#277344",tunic:"#27834d",trim:"#4caf62"},
+    {id:"ocean",name:"Ocean Knight",cost:5,hat:"#2878b8",tunic:"#2455a8",trim:"#65c8ee"},
+    {id:"ember",name:"Fire Guardian",cost:10,hat:"#b84b32",tunic:"#a83228",trim:"#f28a45"},
+    {id:"royal",name:"Royal Mage",cost:15,hat:"#7546a8",tunic:"#58318d",trim:"#c18bea"},
+    {id:"gold",name:"Golden Champion",cost:25,hat:"#c18a19",tunic:"#9b741e",trim:"#f5d66e"},
+    {id:"princessHero",name:"Princess Rescuer",cost:0,hat:"#f3d36b",tunic:"#e5b8d5",trim:"#fff0a8",exclusive:true}
+  ];
+  let gems=0, ownedSkins=["classic"], equippedSkin="classic";
+  try {
+    gems=Math.max(0,Number(localStorage.getItem("mysticRealmsGems"))||0);
+    const savedOwned=JSON.parse(localStorage.getItem("mysticRealmsOwnedSkins")||'["classic"]');
+    if(Array.isArray(savedOwned)) ownedSkins=[...new Set(["classic",...savedOwned.filter(id=>skins.some(s=>s.id===id && (!s.exclusive || princessRescued)))])];
+    const savedEquipped=localStorage.getItem("mysticRealmsEquippedSkin");
+    if(ownedSkins.includes(savedEquipped)) equippedSkin=savedEquipped;
+  } catch (_) {}
+  function saveShop() {
+    try {
+      localStorage.setItem("mysticRealmsGems",String(gems));
+      localStorage.setItem("mysticRealmsOwnedSkins",JSON.stringify(ownedSkins));
+      localStorage.setItem("mysticRealmsEquippedSkin",equippedSkin);
+    } catch (_) {}
+  }
+  function refreshSkinShop() {
+    document.getElementById("gemBalance").textContent="💎 Gems: "+gems;
+    const holder=document.getElementById("skinOptions");
+    holder.replaceChildren();
+    for(const skin of skins) {
+      const owned=ownedSkins.includes(skin.id);
+      const b=document.createElement("button");
+      b.className=equippedSkin===skin.id?"equipped":"";
+      b.textContent=equippedSkin===skin.id?"✓ "+skin.name+" (Wearing)":owned? "Equip "+skin.name : skin.exclusive?"🔒 Rescue the princess at Level 999": "💎 "+skin.cost+" — "+skin.name;
+      b.disabled=equippedSkin===skin.id || (!owned && (skin.exclusive || gems<skin.cost));
+      b.addEventListener("click",()=>{
+        if(ownedSkins.includes(skin.id)) equippedSkin=skin.id;
+        else if(gems>=skin.cost) { gems-=skin.cost; ownedSkins.push(skin.id); equippedSkin=skin.id; }
+        saveShop(); refreshSkinShop();
+      });
+      holder.appendChild(b);
+    }
+  }
+
+  function openPauseMenu() {
+    if(gameState!=="playing" && gameState!=="paused") return;
+    if(gameState==="playing") {
+      gameState="paused";
+      keys.clear(); jumpQueued=false;
+      clearTimeout(musicTimer); musicTimer=null;
+      if (audioContext && audioContext.state === "running") audioContext.suspend();
+      document.getElementById("pauseMenu").hidden=false;
+      document.getElementById("pauseButton").textContent="▶ Resume";
+      refreshSkinShop();
+    } else resumeGame();
+  }
+  function resumeGame() {
+    if(gameState!=="paused") return;
+    gameState="playing";
+    lastTimerTick=performance.now();
+    document.getElementById("pauseMenu").hidden=true;
+    document.getElementById("pauseButton").textContent="Ⅱ Pause";
+    if (musicEnabled && audioContext) audioContext.resume().then(() => playMusicNote()).catch(() => {});
+  }
+
+  function refreshWorldButtons() {
+    const holder = document.getElementById("worldSelect");
+    holder.replaceChildren();
+    worldNames.forEach((name, i) => {
+      const b = document.createElement("button");
+      b.textContent = (i < unlockedWorlds ? "🌍 " : "🔒 ") + (i + 1) + ". " + name;
+      b.disabled = i >= unlockedWorlds;
+      b.title = i < unlockedWorlds ? "Play " + name : "Complete the previous world to unlock this world";
+      b.addEventListener("click", () => { if (i < unlockedWorlds) loadLevel(i); });
+      holder.appendChild(b);
+    });
+    refreshSkinShop();
+  }
+  const levels = [
+    {
+      name:"Enchanted Forest", theme:"forest", width:1800,
+      platforms:[
+        [0,320,390,40],[450,320,280,40],[790,320,330,40],[1180,320,300,40],[1540,320,260,40],
+        [170,260,100,14],[330,220,100,14],[520,260,110,14],[690,215,100,14],
+        [890,260,110,14],[1080,220,100,14],[1260,260,110,14],[1430,210,100,14],[1600,260,110,14]
+      ],
+      coins:[[205,230],[365,190],[555,230],[735,185],[925,230],[1120,190],[1300,230],[1470,180],[1640,230]],
+      slimes:[[570,480,710],[950,820,1080],[1350,1200,1460]],
+      animals:[[185,246,"rabbit"],[545,246,"bird"],[1275,246,"fox"],[1605,246,"turtle"]],
+    },
+    {
+      name:"Mushroom Woods", theme:"mushroom", width:1900,
+      platforms:[
+        [0,320,300,40],[360,320,250,40],[680,320,260,40],[1010,320,270,40],[1350,320,250,40],[1670,320,230,40],
+        [100,265,95,14],[260,215,100,14],[420,255,95,14],[590,205,105,14],
+        [770,250,100,14],[930,205,100,14],[1110,255,100,14],[1280,210,105,14],
+        [1460,255,95,14],[1620,210,100,14],[1770,260,90,14]
+      ],
+      coins:[[135,235],[300,185],[465,225],[635,175],[815,220],[975,175],[1155,225],[1330,180],[1505,225],[1670,180],[1810,230]],
+      slimes:[[430,370,580],[820,700,920],[1160,1030,1260],[1510,1370,1610]],
+      animals:[[115,251,"bird"],[430,241,"rabbit"],[785,236,"turtle"],[1285,196,"fox"],[1630,196,"bird"]],
+    },
+    {
+      name:"The Crystal Cavern", theme:"cavern", width:2000,
+      platforms:[
+        [0,320,260,40],[320,320,230,40],[620,320,230,40],[920,320,220,40],
+        [1210,320,240,40],[1520,320,210,40],[1800,320,200,40],
+        [70,265,95,14],[220,215,90,14],[390,260,100,14],[550,205,95,14],
+        [710,250,95,14],[870,195,95,14],[1030,245,100,14],[1190,190,95,14],
+        [1360,250,95,14],[1510,200,95,14],[1680,250,95,14],[1840,205,100,14]
+      ],
+      coins:[[105,235],[255,185],[425,230],[585,175],[745,220],[905,165],[1070,215],[1225,160],[1395,220],[1545,170],[1715,220],[1875,175]],
+      slimes:[[350,320,470],[740,650,830],[1080,950,1120],[1400,1300,1490],[1740,1630,1790]],
+      animals:[[75,251,"bat"],[395,246,"crystal deer"],[875,181,"bat"],[1365,236,"fox"],[1845,191,"rabbit"]],
+    },
+    {
+      name:"Sunset Desert", theme:"desert", width:1900,
+      platforms:[
+        [0,320,300,40],[360,320,260,40],[680,320,250,40],[1000,320,260,40],[1330,320,250,40],[1650,320,250,40],
+        [100,265,95,14],[260,215,100,14],[440,255,95,14],[610,205,100,14],
+        [790,255,95,14],[960,205,100,14],[1140,255,95,14],[1300,205,100,14],
+        [1480,255,95,14],[1640,205,100,14],[1780,260,90,14]
+      ],
+      coins:[[135,235],[300,185],[475,225],[650,175],[825,225],[1000,175],[1175,225],[1340,175],[1515,225],[1680,175],[1815,230]],
+      slimes:[[420,370,570],[850,760,910],[1190,1100,1240],[1540,1450,1600]],
+      animals:[[105,251,"lizard"],[445,241,"rabbit"],[965,191,"bird"],[1310,191,"lizard"],[1650,191,"fox"]],
+    },
+    {
+      name:"Frostpeak Mountain", theme:"snow", width:2050,
+      platforms:[
+        [0,320,260,40],[320,320,230,40],[620,320,240,40],[930,320,230,40],
+        [1230,320,240,40],[1540,320,220,40],[1830,320,220,40],
+        [70,265,95,14],[220,215,95,14],[390,255,100,14],[560,200,95,14],
+        [730,250,95,14],[900,190,95,14],[1070,245,95,14],[1240,190,95,14],
+        [1410,250,95,14],[1580,200,95,14],[1750,250,95,14],[1900,205,100,14]
+      ],
+      coins:[[105,235],[255,185],[425,225],[595,170],[765,220],[935,160],[1105,215],[1275,160],[1445,220],[1615,170],[1785,220],[1940,175]],
+      slimes:[[350,320,470],[760,680,830],[1100,1020,1140],[1450,1350,1470],[1790,1690,1810]],
+      animals:[[75,251,"rabbit"],[395,241,"fox"],[895,176,"bird"],[1245,176,"snow hare"],[1755,236,"turtle"]],
+    }
+  ];
+  // Build a full 999-level quest. The first five realms are handcrafted;
+  // every later level gets its own deterministic platform, gem, and enemy layout.
+  const handcraftedLevels = levels.slice();
+  for (let n=6; n<=999; n++) {
+    const base = handcraftedLevels[(n-1)%handcraftedLevels.length];
+    const stage = JSON.parse(JSON.stringify(base));
+    const seed = n * 7919;
+    const rand = (k) => ((seed + k * 104729) % 997) / 997;
+    stage.name = "Level " + n + " — " + base.name;
+    stage.width = 2050;
+    stage.platforms = [[0,320,310,40],[370,320,300,40],[730,320,300,40],[1090,320,300,40],[1450,320,300,40],[1810,320,240,40]];
+    stage.coins = [];
+    stage.animals = [];
+    stage.slimes = [];
+    for (let i=0; i<9; i++) {
+      const x = 105 + i*215 + Math.floor(rand(i+1)*34);
+      const y = 205 + Math.floor(rand(i+20)*58);
+      const w = 82 + Math.floor(rand(i+40)*24);
+      stage.platforms.push([x,y,w,14]);
+      stage.coins.push([x+Math.floor(w/2),y-30]);
+      if ((i+n)%3===0) stage.animals.push([x+12,y-14,(i%2===0?"rabbit":"bird")]);
+    }
+    const dangerCount = Math.min(5, 2 + Math.floor(n/180));
+    for (let i=0; i<dangerCount; i++) {
+      const x=430+i*300+Math.floor(rand(i+70)*45);
+      stage.slimes.push([x,Math.max(0,x-75),Math.min(stage.width-30,x+95)]);
+    }
+    stage.theme = base.theme;
+    levels.push(stage);
+  }
+  const player = {x:42,y:270,w:18,h:25,vx:0,vy:0,onGround:false,invuln:0,facing:1};
+
+  function loadLevel(index) {
+    levelIndex=index;
+    const data=levels[levelIndex];
+    levelWidth=data.width;
+    platforms=data.platforms.map(([x,y,w,h])=>({x,y,w,h}));
+    coins=data.coins.map(([x,y])=>({x,y,taken:false,respawn:0}));
+    levelRupeesCollected=0;
+    slimes=data.slimes.map(([x,min,max])=>({x,y:304,w:22,h:16,vx:Math.min(4.2, 0.62 + levelIndex*0.004),min,max,alive:true}));
+    animals=(data.animals || []).map(([x,y,type])=>({x,y,type}));
+    // Exactly 30 fair, jumpable spike hazards are placed in every level.
+    // Their spacing leaves enough room for a normal jump, while their width
+    // grows slowly as the quest advances.
+    const spikeWidth = Math.min(20, 14 + Math.floor(index / 200));
+    obstacles = Array.from({length:30}, (_,i) => ({
+      x: 112 + i * ((levelWidth - 250) / 29), y: 304, w: spikeWidth, h: 16
+    }));
+    player.x=42; player.y=270; player.vx=0; player.vy=0; player.onGround=false; player.invuln=0; player.facing=1;
+    camera=0; gameState="playing";
+    document.getElementById("pauseMenu").hidden=true;
+    document.getElementById("pauseButton").textContent="Ⅱ Pause";
+    // Give each new level a fresh two-minute countdown.
+    timeLeft=120;
+    lastTimerTick=performance.now();
+    document.getElementById("nextLevel").hidden=true;
+    refreshWorldButtons();
+  }
+  function reset() {
+    score=0;
+    timeLeft=120;
+    lastTimerTick=performance.now();
+    loadLevel(0);
+  }
+  function nextLevel() {
+    // Progression is checked against the actual level state, not the button alone.
+    if (gameState!=="levelComplete" || !coins.length || !coins.every(c=>c.taken)) return;
+    if (player.x < levelWidth-60 || levelIndex >= levels.length-1) return;
+    unlockedWorlds = Math.max(unlockedWorlds, levelIndex + 2);
+    try { localStorage.setItem("forestQuestUnlockedWorlds", String(unlockedWorlds)); } catch (_) {}
+    refreshWorldButtons();
+    loadLevel(levelIndex+1);
+  }
+  function rect(x,y,w,h,color) { ctx.fillStyle=color; ctx.fillRect(Math.round(x-camera),Math.round(y),w,h); }
+  function overlaps(a,b) { return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+
+  // Discourage casual tampering and ignore keyboard events generated by scripts.
+  document.addEventListener("contextmenu", e => e.preventDefault());
+  document.addEventListener("keydown", e => {
+    const blocked = e.code==="F12" ||
+      (e.ctrlKey && ["KeyU","KeyS","KeyP"].includes(e.code)) ||
+      (e.ctrlKey && e.shiftKey && ["KeyI","KeyJ","KeyC"].includes(e.code));
+    if (blocked) { e.preventDefault(); e.stopPropagation(); return; }
+  }, true);
+  window.addEventListener("keydown", e => {
+    if (!e.isTrusted) return;
+    if (e.code==="Escape" || e.code==="KeyP") { e.preventDefault(); openPauseMenu(); return; }
+    if(gameState==="paused") { if(e.code==="Enter") resumeGame(); return; }
+    if (["ArrowLeft","ArrowRight","ArrowUp","Space"].includes(e.code)) e.preventDefault();
+    if (!keys.has(e.code) && ["Space","ArrowUp","KeyW"].includes(e.code)) jumpQueued=true;
+    keys.add(e.code);
+    if (e.code==="KeyR") reset();
+    if (e.code==="Enter" && gameState==="levelComplete") nextLevel();
+  });
+  window.addEventListener("keyup", e => keys.delete(e.code));
+  window.addEventListener("blur", () => keys.clear());
+  // iPhone/iPad controls: support both Pointer Events and iOS Touch Events.
+  // Touch handlers are important for Safari versions/devices where pointer
+  // capture can be unreliable. Keep movement pressed until the finger lifts.
+  function bindTouchButton(id, code, isJump=false) {
+    const el=document.getElementById(id);
+    let activePointer=null;
+    const press=()=>{
+      if (gameState !== "playing") return;
+      if (isJump) { if (!keys.has(code)) jumpQueued=true; }
+      else keys.add(code);
+    };
+    const release=()=>{ keys.delete(code); activePointer=null; };
+    el.addEventListener("pointerdown", e=>{
+      e.preventDefault(); activePointer=e.pointerId; press();
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    }, {passive:false});
+    el.addEventListener("pointerup", e=>{ if(activePointer===e.pointerId) release(); });
+    el.addEventListener("pointercancel", release);
+    el.addEventListener("lostpointercapture", release);
+    el.addEventListener("touchstart", e=>{ e.preventDefault(); press(); }, {passive:false});
+    el.addEventListener("touchend", e=>{ e.preventDefault(); release(); }, {passive:false});
+    el.addEventListener("touchcancel", release, {passive:false});
+    el.addEventListener("contextmenu",e=>e.preventDefault());
+    el.addEventListener("dragstart",e=>e.preventDefault());
+  }
+  bindTouchButton("touchLeft","ArrowLeft");
+  bindTouchButton("touchRight","ArrowRight");
+  bindTouchButton("touchJump","Space",true);
+  document.getElementById("restart").addEventListener("click", reset);
+  document.getElementById("nextLevel").addEventListener("click", nextLevel);
+  document.getElementById("pauseButton").addEventListener("click", openPauseMenu);
+  document.getElementById("resumeButton").addEventListener("click", resumeGame);
+  document.getElementById("musicButton").addEventListener("click", () => musicEnabled ? stopMusic() : startMusic());
+
+  function update() {
+    const now=performance.now();
+    if (gameState !== "playing") { lastTimerTick=now; return; }
+    timeLeft=Math.max(0,timeLeft-(now-lastTimerTick)/1000);
+    lastTimerTick=now;
+    if (timeLeft<=0) { gameState="timeUp"; return; }
+    const left=keys.has("ArrowLeft")||keys.has("KeyA");
+    const right=keys.has("ArrowRight")||keys.has("KeyD");
+    const moveSpeed = 2.35 + Math.min(0.7, levelIndex * 0.0007);
+    player.vx = left===right ? player.vx*0.72 : (right ? moveSpeed : -moveSpeed);
+    if (Math.abs(player.vx)<0.08) player.vx=0;
+    if (player.vx) player.facing=Math.sign(player.vx);
+    if (jumpQueued && player.onGround) { player.vy=-8.2; player.onGround=false; }
+    jumpQueued=false;
+
+    const oldY=player.y;
+    player.x += player.vx;
+    player.x=Math.max(0,Math.min(levelWidth-player.w,player.x));
+    // Horizontal collision with platform sides.
+    for (const p of platforms) if (overlaps(player,p)) {
+      if (player.vx>0) player.x=p.x-player.w;
+      else if (player.vx<0) player.x=p.x+p.w;
+    }
+    player.vy=Math.min(player.vy+gravity,9);
+    player.y += player.vy;
+    player.onGround=false;
+    for (const p of platforms) if (overlaps(player,p)) {
+      if (player.vy>=0 && oldY+player.h<=p.y+5) {
+        player.y=p.y-player.h; player.vy=0; player.onGround=true;
+      } else if (player.vy<0) { player.y=p.y+p.h; player.vy=0; }
+    }
+    if (player.y>H+60) { hurt(); return; }
+
+    // Spikes are deadly on contact; the generous spacing keeps every jump fair.
+    for (const spike of obstacles) {
+      const hitbox = {x:spike.x+2, y:spike.y+5, w:spike.w-4, h:spike.h-5};
+      if (overlaps(player, hitbox)) { hurt(); return; }
+    }
+
+    for (const s of slimes) if (s.alive) {
+      s.x+=s.vx;
+      if (s.x<s.min || s.x+s.w>s.max) s.vx*=-1;
+      // Any touch from a creature is dangerous, even while jumping.
+      if (overlaps(player,s)) { hurt(); return; }
+    }
+    // Every animal is dangerous too. Touching one restarts the current world.
+    for (const a of animals) {
+      const animalHitbox={x:a.x,y:a.y-3,w:21,h:16};
+      if (overlaps(player,animalHitbox)) { hurt(); return; }
+    }
+    // Rupees respawn after collection, so players can collect without a limit.
+    for (const c of coins) {
+      if (c.taken) {
+        c.respawn--;
+        if (c.respawn<=0) c.taken=false;
+      } else {
+        const hit={x:c.x-7,y:c.y-7,w:14,h:14};
+        if (overlaps(player,hit)) {
+          c.taken=true; c.respawn=90; score++; levelRupeesCollected++;
+          gems++; saveShop(); refreshSkinShop();
+        }
+      }
+    }
+    if (player.invuln>0) player.invuln--;
+    camera=Math.max(0,Math.min(levelWidth-W,player.x-W*0.38));
+    if (player.x>levelWidth-60 && levelRupeesCollected>=coins.length) {
+      unlockedWorlds = Math.max(unlockedWorlds, Math.min(levels.length, levelIndex + 2));
+      try { localStorage.setItem("forestQuestUnlockedWorlds", String(unlockedWorlds)); } catch (_) {}
+      refreshWorldButtons();
+      if (levelIndex===levels.length-1) {
+        princessRescued=true;
+        try { localStorage.setItem("mysticRealmsPrincessRescued","yes"); } catch (_) {}
+        if (!ownedSkins.includes("princessHero")) ownedSkins.push("princessHero");
+        equippedSkin="princessHero"; saveShop(); refreshSkinShop();
+        gameState="princessSaved";
+      } else gameState="levelComplete";
+      document.getElementById("nextLevel").hidden = gameState!=="levelComplete";
+    }
+  }
+  function hurt() {
+    // Restart this level from its beginning. The level number stays the same,
+    // but its rupees and creatures are reset so the player can try again.
+    loadLevel(levelIndex);
+  }
+
+  function drawCloud(x,y) {
+    const sx=x-camera*0.35;
+    ctx.fillStyle="#d8eee0";
+    ctx.fillRect(sx,y,38,12); ctx.fillRect(sx+8,y-8,18,20); ctx.fillRect(sx+22,y-4,20,16);
+  }
+  function draw() {
+    // Each world gets its own simple pixel-art background.
+    const theme = levels[levelIndex].theme;
+    if (theme==="forest") {
+      ctx.fillStyle="#8fc9d2"; ctx.fillRect(0,0,W,H);
+      drawCloud(70,65); drawCloud(360,95); drawCloud(700,55); drawCloud(1100,85); drawCloud(1510,60);
+      for(let i=0;i<8;i++){ const x=i*270-camera*0.55; ctx.fillStyle="#477d58"; ctx.beginPath(); ctx.moveTo(x,320); ctx.lineTo(x+135,160); ctx.lineTo(x+270,320); ctx.fill(); }
+      for(let i=0;i<10;i++){ const x=i*145-camera*0.22; rect(x,225,13,95,"#76513a"); rect(x-16,205,45,35,"#286a45"); rect(x-8,185,30,28,"#39864c"); }
+    } else if (theme==="mushroom") {
+      ctx.fillStyle="#b8a3d8"; ctx.fillRect(0,0,W,H);
+      for(let i=0;i<9;i++){ const x=i*125-camera*0.3; rect(x,220,10,100,"#79543e"); rect(x-18,205,46,13,"#e66b91"); rect(x-12,190,34,16,"#f18caf"); rect(x-7,195,5,5,"#fff0c9"); rect(x+10,198,5,5,"#fff0c9"); }
+      ctx.fillStyle="#7d6aa5"; for(let i=0;i<7;i++){ const x=i*180-camera*0.45; ctx.fillRect(x,270,90,50); }
+    } else if (theme==="cavern") {
+      ctx.fillStyle="#242b55"; ctx.fillRect(0,0,W,H);
+      for(let i=0;i<12;i++){ const x=i*75-camera*0.25; rect(x,90+(i%3)*25,12,90,"#4e4e91"); rect(x+12,110+(i%2)*30,10,70,"#31a7bd"); rect(x+3,95+(i%3)*25,5,55,"#a3f4ee"); }
+      ctx.fillStyle="#424477"; ctx.fillRect(0,285,W,35);
+      for(let i=0;i<8;i++){ const x=i*100-camera*0.4; ctx.fillStyle="#5c4e91"; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+35,75); ctx.lineTo(x+70,0); ctx.fill(); }
+    } else if (theme==="desert") {
+      ctx.fillStyle="#f2ad70"; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle="#f6d28a"; ctx.beginPath(); ctx.arc(520-camera*0.12,85,35,0,Math.PI*2); ctx.fill();
+      for(let i=0;i<8;i++){ const x=i*180-camera*0.35; ctx.fillStyle="#c77d58"; ctx.beginPath(); ctx.moveTo(x,320); ctx.quadraticCurveTo(x+70,205,x+160,320); ctx.fill(); ctx.fillStyle="#e29a61"; ctx.fillRect(x+30,285,65,35); }
+      for(let i=0;i<7;i++){ const x=i*240-camera*0.2; rect(x,245,8,75,"#6f5738"); rect(x-12,245,32,8,"#43834c"); rect(x-12,225,8,25,"#43834c"); rect(x+12,225,8,25,"#43834c"); }
+    } else if (theme==="snow") {
+      ctx.fillStyle="#9bc6e8"; ctx.fillRect(0,0,W,H);
+      drawCloud(100,65); drawCloud(410,90); drawCloud(760,55); drawCloud(1120,80);
+      for(let i=0;i<9;i++){ const x=i*230-camera*0.42; ctx.fillStyle="#6686a7"; ctx.beginPath(); ctx.moveTo(x,320); ctx.lineTo(x+115,105+(i%2)*35); ctx.lineTo(x+230,320); ctx.fill(); ctx.fillStyle="#f0f7ff"; ctx.beginPath(); ctx.moveTo(x+80,170+(i%2)*35); ctx.lineTo(x+115,105+(i%2)*35); ctx.lineTo(x+150,170+(i%2)*35); ctx.fill(); }
+      ctx.fillStyle="#dceefa"; ctx.fillRect(0,300,W,20);
+    }
+    // Platforms, with grassy pixel edges.
+    for(const p of platforms){
+      rect(p.x,p.y,p.w,p.h,"#76503b");
+      rect(p.x,p.y,p.w,5,"#5c9b43");
+      for(let x=p.x+8;x<p.x+p.w-4;x+=18) rect(x,p.y+9,7,4,"#8b6348");
+    }
+    // Thirty sharp, clearly visible spike obstacles in every level.
+    for (const spike of obstacles) {
+      const sx=spike.x-camera;
+      ctx.fillStyle="#542d36";
+      ctx.beginPath(); ctx.moveTo(sx,spike.y+spike.h); ctx.lineTo(sx+spike.w/2,spike.y); ctx.lineTo(sx+spike.w,spike.y+spike.h); ctx.closePath(); ctx.fill();
+      ctx.fillStyle="#e8e5df";
+      ctx.beginPath(); ctx.moveTo(sx+spike.w*.34,spike.y+spike.h-3); ctx.lineTo(sx+spike.w/2,spike.y+4); ctx.lineTo(sx+spike.w*.66,spike.y+spike.h-3); ctx.closePath(); ctx.fill();
+    }
+    // Friendly pixel animals stay perched on the stationary platforms.
+    for (const a of animals) {
+      const x=a.x, y=a.y, t=a.type;
+      if (t.includes("bird") || t.includes("bat")) {
+        const body=t==="bat"?"#55476f":"#e7c45f";
+        rect(x+3,y+5,10,6,body); rect(x+1,y+3,5,4,body); rect(x+11,y+2,5,5,body);
+        rect(x+13,y+4,2,2,"#182a27"); rect(x+15,y+7,4,2,"#d77a42");
+        if(t==="bat"){rect(x-2,y+3,6,3,"#8874a8");rect(x+12,y+1,7,3,"#8874a8");}
+      } else if (t.includes("fox") || t.includes("lizard")) {
+        const fur=t.includes("fox")?"#d8793f":"#71a85b";
+        rect(x+3,y+5,13,7,fur); rect(x+2,y+1,5,7,fur); rect(x+10,y+1,5,7,fur);
+        rect(x+5,y+7,2,2,"#17251d"); rect(x+12,y+7,2,2,"#17251d");
+        rect(x+14,y+8,7,3,t.includes("fox")?"#f1d4a2":"#71a85b");
+      } else {
+        const fur=t.includes("turtle")?"#4b9360":t.includes("deer")?"#8c7257":"#eee8dc";
+        rect(x+3,y+5,13,7,fur); rect(x+5,y+2,8,5,fur);
+        rect(x+5,y+1,2,4,fur); rect(x+11,y+1,2,4,fur);
+        rect(x+7,y+7,2,2,"#17251d"); rect(x+13,y+7,2,2,"#17251d");
+        if(t.includes("turtle")){rect(x+5,y+3,9,5,"#286344");rect(x+7,y+4,5,2,"#91bd67");}
+        if(t.includes("deer")){rect(x+5,y-3,2,5,"#e8d8b4");rect(x+12,y-3,2,5,"#e8d8b4");}
+      }
+    }
+    // Coins.
+    for(const c of coins) if(!c.taken){
+      const bob=Math.sin(Date.now()/170+c.x)*2;
+      rect(c.x-4,c.y-7+bob,8,14,"#19a96b");
+      rect(c.x-2,c.y-5+bob,3,10,"#a6ffd0");
+      rect(c.x-1,c.y-7+bob,2,14,"#08764b");
+    }
+    // Slimes.
+    for(const s of slimes) if(s.alive){
+      rect(s.x,s.y+5,s.w,s.h-5,"#246044"); rect(s.x+3,s.y,s.w-6,9,"#58a85d");
+      rect(s.x+5,s.y+7,3,4,"#102b2a"); rect(s.x+15,s.y+7,3,4,"#102b2a");
+    }
+    // Player: tiny pixel adventurer.
+    if(player.invuln===0 || Math.floor(player.invuln/6)%2===0){
+      const x=player.x, y=player.y;
+      // The equipped shop skin changes the hero's cap and tunic colors.
+      const skin=skins.find(item=>item.id===equippedSkin)||skins[0];
+      rect(x+4,y+1,10,5,skin.hat); rect(x+1,y+4,7,3,skin.hat);
+      rect(x+5,y+5,9,7,"#efbd83"); rect(x+4,y+11,11,3,"#d89b62");
+      rect(x+3,y+14,13,7,skin.tunic); rect(x+5,y+14,8,7,skin.trim);
+      rect(x+2,y+20,6,4,"#62412f"); rect(x+11,y+20,6,4,"#62412f");
+      rect(x+2,y+23,7,2,"#342b28"); rect(x+10,y+23,7,2,"#342b28");
+      rect(x+(player.facing>0?11:5),y+7,2,2,"#182a27");
+      if (player.facing>0) { rect(x+16,y+12,5,2,"#d9e6d0"); rect(x+19,y+10,2,6,"#b7c9bb"); }
+      else { rect(x-3,y+12,5,2,"#d9e6d0"); rect(x-3,y+10,2,6,"#b7c9bb"); }
+    }
+    // The final level ends at a castle where the princess is waiting.
+    if (levelIndex===levels.length-1) {
+      const cx=levelWidth-205-camera;
+      ctx.fillStyle="#463b61"; ctx.fillRect(cx,218,118,105);
+      ctx.fillStyle="#8e789e"; ctx.fillRect(cx+10,190,24,133); ctx.fillRect(cx+84,190,24,133);
+      ctx.fillRect(cx+38,205,42,118);
+      ctx.fillStyle="#c6a9dc"; ctx.fillRect(cx+5,180,34,12); ctx.fillRect(cx+79,180,34,12); ctx.fillRect(cx+34,194,50,12);
+      ctx.fillStyle="#f2d8a7"; ctx.fillRect(cx+50,270,20,53);
+      ctx.fillStyle="#f7c7df"; ctx.fillRect(cx+56,235,10,13); ctx.fillRect(cx+52,248,18,18);
+      ctx.fillStyle="#fff0a8"; ctx.font="bold 10px monospace"; ctx.textAlign="center"; ctx.fillText("PRINCESS",cx+59,170); ctx.textAlign="left";
+    }
+    // A glowing portal waits at the end of every world.
+    const portalX=levelWidth-66, portalY=245;
+    const portalOpen=coins.every(c=>c.taken);
+    const portalGlow = portalOpen ? "#a8fff2" : "#6c7b9b";
+    ctx.fillStyle=portalGlow+"33";
+    ctx.beginPath(); ctx.ellipse(portalX+18-camera,portalY+39,31,48,0,0,Math.PI*2); ctx.fill();
+    rect(portalX,portalY+7,7,66,"#594879");
+    rect(portalX+29,portalY+7,7,66,"#594879");
+    rect(portalX+5,portalY,26,8,"#b9a4ed");
+    rect(portalX+5,portalY+8,26,56,portalOpen?"#55d9d0":"#53617e");
+    rect(portalX+9,portalY+13,18,46,portalOpen?"#a7fff0":"#8390aa");
+    rect(portalX+13,portalY+17,10,38,portalOpen?"#5c58a8":"#626b87");
+    rect(portalX+16,portalY+23,4,25,portalOpen?"#e2ffff":"#9aa3ba");
+    rect(portalX+2,portalY+69,33,5,"#d8bd72");
+    ctx.fillStyle=portalOpen?"#d9ffff":"#cbd5e1";
+    ctx.font="bold 10px monospace"; ctx.textAlign="center";
+    ctx.fillText(portalOpen?"PORTAL OPEN":"FIND RUPEES",portalX+18-camera,portalY-8);
+    ctx.textAlign="left";
+    // HUD.
+    // Compact two-row HUD: keep long world names inside the panel.
+    ctx.fillStyle="#263d31"; ctx.fillRect(10,10,250,48);
+    ctx.fillStyle="#d8e8c5"; ctx.fillRect(12,12,246,44);
+    ctx.fillStyle="#203b2c";
+    ctx.font="bold 12px monospace";
+    ctx.fillText("WORLD "+(levelIndex+1)+"/"+levels.length,20,27);
+    ctx.font="bold 11px monospace";
+    ctx.fillText(levels[levelIndex].name.toUpperCase(),20,45);
+    ctx.fillStyle="#203b2c";
+    ctx.fillText("RUPEES "+levelRupeesCollected+" ∞",175,27);
+    ctx.fillStyle="#d64b4b";
+    ctx.font="bold 13px monospace";
+    ctx.fillText("♥ ♥ ♥",185,45);
+    // Two-minute countdown for the entire quest. It does not reset when a world restarts.
+    const seconds=Math.ceil(timeLeft);
+    const timerText=Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
+    ctx.fillStyle="#263d31"; ctx.fillRect(W-104,10,94,34);
+    ctx.fillStyle=timeLeft<=20?"#ffb4a8":"#d8e8c5";
+    ctx.font="bold 17px monospace"; ctx.textAlign="center";
+    ctx.fillText("TIME "+timerText,W-57,32); ctx.textAlign="left";
+    if(gameState!=="playing"){
+      ctx.fillStyle="#101827cc"; ctx.fillRect(0,0,W,H);
+      ctx.textAlign="center"; ctx.fillStyle="#fff"; ctx.font="bold 30px monospace";
+      const headline = gameState==="princessSaved" ? "THE PRINCESS IS SAVED!" : gameState==="won" ? "QUEST COMPLETE!" : gameState==="levelComplete" ? "LEVEL COMPLETE!" : gameState==="timeUp" ? "TIME IS UP!" : "GAME OVER";
+      ctx.fillText(headline,W/2,H/2-18);
+      const message = gameState==="princessSaved" ? "You beat Level 999! Princess Rescuer outfit unlocked! Press R to begin again." :
+        gameState==="won" ? "You conquered the realms!" :
+        gameState==="levelComplete" ? "Portal open! Press Enter or Next Level to teleport." :
+        gameState==="timeUp" ? "You ran out of time! Press R to try again." :
+        "Press R or Restart Game to try again.";
+      ctx.font="12px monospace";
+      ctx.fillText(message,W/2,H/2+16);
+      ctx.textAlign="left";
+    }
+  }
+  function loop(){ update(); draw(); requestAnimationFrame(loop); }
+  reset(); refreshWorldButtons(); loop();
+})();
+</script>
+</body>
+</html>
